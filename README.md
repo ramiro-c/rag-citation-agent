@@ -73,6 +73,25 @@ print(f"confidence: {result.confidence:.2f} | low: {result.low_confidence}")
 PY
 ```
 
+## Demo interactivo
+
+En lugar del ejemplo anterior, el script `demo.py` baja 20 resúmenes de Wikipedia a `data/corpus.jsonl` (una vez, con internet) y después corre offline:
+
+```bash
+uv run python demo.py --fetch                    # baja el corpus (1 vez)
+uv run python demo.py                            # loop interactivo, 'q' para salir
+uv run python demo.py --ask "Where is the Eiffel Tower?"   # pregunta única
+```
+
+Salida típica:
+
+```
+a: The Eiffel Tower is located in Paris, France.
+citations:
+  [wiki:Eiffel_Tower] "The Eiffel Tower is a wrought-iron lattice tower in Paris, France."
+confidence: 0.90 | low_confidence: False | insufficient_evidence: False
+```
+
 ## Tests
 
 ```bash
