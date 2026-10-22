@@ -3,3 +3,10 @@ __pycache__/
 .venv/
 .env
 data/
+
+# macOS
+.DS_Store
+
+# local tool caches
+.atl/
+.cachebro/
