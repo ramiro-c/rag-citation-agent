@@ -15,22 +15,45 @@ hace fallback a búsqueda adicional.
 
 ## Cómo funciona
 
+```mermaid
+flowchart TD
+    Q(["question"]) --> S["<b>Retriever</b><br/>TF-IDF in-memory + cosine<br/><i>search(question, k * attempt)</i>"]
+    S --> M["merge de sources<br/>dedup por doc_id"]
+    M --> P["<b>Prompt</b><br/>system + sources + question"]
+    P --> L["<b>LLM</b> · JSON mode<br/>answer · citations · confidence"]
+    L --> V{"Validar citas<br/>doc_id existe en sources<br/>y la quote aparece en source.text"}
+    V --> G{"confidence ≥ threshold<br/>y al menos 1 cita válida"}
+    G -->|sí| OK(["CitedAnswer<br/>low_confidence = false"])
+    G -->|no| A{"quedan intentos"}
+    A -->|sí| F["retrieval más amplio<br/>k * attempt"]
+    F --> S
+    A -->|no| IE(["CitedAnswer<br/>low_confidence = true<br/>insufficient_evidence = true"])
 ```
-question ──> Retriever (TF-IDF + cosine) ──> sources
-                │
-                ▼
-        LLM (OpenRouter, JSON mode) ──> answer + citations + confidence
-                │
-                ├─ citations validadas contra las fuentes (doc_id existe,
-                │  la quote aparece en el texto del source)
-                ├─ confidence >= threshold ──> respuesta grounded
-                └─ si no ──> fallback: retrieval más amplio + retry (1 vez)
-                              └─ sigue débil ──> insufficient_evidence=True
-```
+
+El loop es lo que hace que una respuesta débil no pase como si estuviera
+grounded: cada reintento amplía el retrieval (`k * attempt`), y si se agotan
+los intentos la respuesta sale marcada explícitamente como insuficiente.
+Defaults: `threshold=0.6`, `max_attempts=2`, `k=3` (todos por env, ver
+[Configuración](#configuración-todo-por-env)).
 
 Diseñado a mano a propósito: el mecanismo (retrieval, validación de citas,
 umbral de confianza, fallback) es el contenido del repo, no un detalle de
 implementación de un framework.
+
+### Mapa de módulos
+
+```mermaid
+flowchart LR
+    demo["<b>demo.py</b><br/>CLI interactivo"] --> agent["<b>agent.py</b><br/>orquestación"]
+    demo --> corpus["<b>corpus.py</b><br/>Wikipedia + cache JSONL"]
+    corpus --> retrieval["<b>retrieval.py</b><br/>TF-IDF + cosine"]
+    agent --> retrieval
+    agent --> llm["<b>llm.py</b><br/>cliente HTTP · JSON mode"]
+    agent --> config["<b>config.py</b><br/>presets + env"]
+    agent --> schemas["<b>schemas.py</b><br/>modelos Pydantic"]
+    config --> llm
+    retrieval --> schemas
+```
 
 - `rag_agent/retrieval.py` — vector store TF-IDF in-memory con interfaz `Retriever` (swappable por embeddings reales después)
 - `rag_agent/llm.py` — cliente OpenAI-compatible (chat completions con `response_format: json_object`); tolera respuestas con fences o con el JSON embebido en prosa
