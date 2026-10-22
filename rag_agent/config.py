@@ -18,7 +18,7 @@ from rag_agent.llm import OpenAICompatClient, LLMClient
 PROVIDER_PRESETS: dict[str, dict[str, str]] = {
     "openrouter": {
         "base_url": "https://openrouter.ai/api/v1",
-        "model": "google/gemma-4-31b-it:free",
+        "model": "nvidia/nemotron-3.5-super-vl:free",
     },
     "openai": {
         "base_url": "https://api.openai.com/v1",

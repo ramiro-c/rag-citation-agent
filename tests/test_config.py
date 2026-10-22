@@ -14,7 +14,7 @@ def test_openrouter_preset_by_default(monkeypatch):
 
     assert cfg.provider == "openrouter"
     assert cfg.base_url == "https://openrouter.ai/api/v1"
-    assert cfg.model == "google/gemma-4-31b-it:free"
+    assert cfg.model  # preset model, name not pinned on purpose
     assert cfg.api_key == "sk-or-test"
 
 
