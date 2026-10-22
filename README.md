@@ -40,6 +40,21 @@ Diseñado a mano a propósito: el mecanismo (retrieval, validación de citas,
 umbral de confianza, fallback) es el contenido del repo, no un detalle de
 implementación de un framework.
 
+### Mapa de módulos
+
+```mermaid
+flowchart LR
+    demo["<b>demo.py</b><br/>CLI interactivo"] --> agent["<b>agent.py</b><br/>orquestación"]
+    demo --> corpus["<b>corpus.py</b><br/>Wikipedia + cache JSONL"]
+    corpus --> retrieval["<b>retrieval.py</b><br/>TF-IDF + cosine"]
+    agent --> retrieval
+    agent --> llm["<b>llm.py</b><br/>cliente HTTP · JSON mode"]
+    agent --> config["<b>config.py</b><br/>presets + env"]
+    agent --> schemas["<b>schemas.py</b><br/>modelos Pydantic"]
+    config --> llm
+    retrieval --> schemas
+```
+
 - `rag_agent/retrieval.py` — vector store TF-IDF in-memory con interfaz `Retriever` (swappable por embeddings reales después)
 - `rag_agent/llm.py` — cliente OpenAI-compatible (chat completions con `response_format: json_object`); tolera respuestas con fences o con el JSON embebido en prosa
 - `rag_agent/config.py` — presets de proveedor (`openrouter`, `openai`) y overrides por env
