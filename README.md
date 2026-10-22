@@ -33,9 +33,12 @@ umbral de confianza, fallback) es el contenido del repo, no un detalle de
 implementación de un framework.
 
 - `rag_agent/retrieval.py` — vector store TF-IDF in-memory con interfaz `Retriever` (swappable por embeddings reales después)
-- `rag_agent/llm.py` — cliente OpenRouter (chat completions con `response_format: json_object`)
+- `rag_agent/llm.py` — cliente OpenAI-compatible (chat completions con `response_format: json_object`); tolera respuestas con fences o con el JSON embebido en prosa
+- `rag_agent/config.py` — presets de proveedor (`openrouter`, `openai`) y overrides por env
+- `rag_agent/corpus.py` — descarga de resúmenes de Wikipedia, cache JSONL e indexado
 - `rag_agent/agent.py` — orquestación: retrieve → answer → validar citas → confidence gate → fallback
 - `rag_agent/schemas.py` — modelos Pydantic (`Source`, `Citation`, `CitedAnswer`)
+- `demo.py` — demo interactivo sobre el corpus local
 
 ## Configuración (todo por env)
 
@@ -43,17 +46,21 @@ implementación de un framework.
 |---|---|---|
 | `LLM_PROVIDER` | `openrouter` | Preset: `openrouter` \| `openai` |
 | `LLM_BASE_URL` | — | Override: cualquier endpoint OpenAI-compatible |
-| `LLM_MODEL` | — | Override del modelo del preset (`google/gemma-4-31b-it:free` gratis en OpenRouter) |
+| `LLM_MODEL` | — | Override del modelo del preset (los defaults viven en `rag_agent/config.py`) |
 | `LLM_API_KEY` | — | Key (fallback: `{PROVIDER}_API_KEY`, ej. `OPENAI_API_KEY`) |
 | `AGENT_CONFIDENCE_THRESHOLD` | `0.6` | Confianza mínima para aceptar la respuesta |
 | `AGENT_MAX_ATTEMPTS` | `2` | Intentos de retrieve+answer antes de rendirse |
 | `AGENT_RETRIEVAL_K` | `3` | Sources recuperados por intento |
 
+Las variables se leen del entorno. `demo.py` además carga un `.env` en la raíz del
+repo (vía `python-dotenv`), así que alcanza con poner `LLM_API_KEY=sk-or-...` ahí
+en vez de exportarla en cada shell.
+
 ## Uso
 
 ```bash
 uv sync
-export LLM_API_KEY=sk-or-...
+export LLM_API_KEY=sk-or-...   # o ponela en un .env en la raíz del repo
 
 uv run python - <<'PY'
 from rag_agent.agent import RagCitationAgent
@@ -82,6 +89,11 @@ uv run python demo.py --fetch                    # baja el corpus (1 vez)
 uv run python demo.py                            # loop interactivo, 'q' para salir
 uv run python demo.py --ask "Where is the Eiffel Tower?"   # pregunta única
 ```
+
+Si `data/corpus.jsonl` no existe, `demo.py` lo baja solo en la primera corrida
+aunque no pases `--fetch`. Los 20 tópicos están listados en `rag_agent/corpus.py`
+y el corpus queda cacheado como JSONL: después de la primera descarga todo corre
+offline.
 
 Salida típica:
 
